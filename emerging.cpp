@@ -53,6 +53,7 @@ emerging::emerging(QObject *parent, const QVariantList &args)
 	connect(&timer, SIGNAL(timeout()), this, SLOT(updateStatus()));
 	timer.start(1000);
 	connect(Plasma::Theme::defaultTheme(), SIGNAL(themeChanged()), this, SLOT(themeChanged()));
+	setAspectRatioMode(Plasma::IgnoreAspectRatio);
 }
 
 
@@ -98,11 +99,7 @@ void emerging::init()
 	layout->addItem(&totaljob);
 	
 	clear();
-// 	resize(400, 200);
-// 	this->setAspectRatioMode(Plasma::InvalidAspectRatioMode);
-	
-	
-	
+	resize(400, 200);
 }
 
 
