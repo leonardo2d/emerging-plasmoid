@@ -31,6 +31,7 @@
 #include <QTimer>
 #include <QFile>
 #include <QGraphicsLinearLayout>
+#include <QProcess>
 
 #include <plasma/svg.h>
 #include <plasma/theme.h>
@@ -99,30 +100,23 @@ void emerging::init()
 	layout->addItem(&totaljob);
 	
 	clear();
-	resize(400, 200);
 }
 
 
 
 void emerging::updateStatus() {
 	
-	/* gets a file suitable for running getcurrent */
-	QString tmpfn = KStandardDirs::locateLocal("tmp", "emerging-plasmoid/.tmp");
+	/* Get the getcurrent program */
+	QString getcurrentfn = KStandardDirs::locate("data", "emerging-plasmoid/getcurrent");
 	
-	/* starts building the command to run getcurrent */
-	QString cmd = "perl ";
-	cmd += KStandardDirs::locate("data", "emerging-plasmoid/getcurrent");
-	cmd += " > " + tmpfn;
 	
-	/* run it */
-	int status = system(cmd.toAscii().data());
-	if (status != 0) return;
 	
-	/* now lets open the resulting file to parse */
-	QFile tmpf(tmpfn);
-	if (!tmpf.open(QFile::ReadOnly)) return;
-	QTextStream stream(&tmpf);
-	QString result = stream.readAll();
+	/* TODO: Add support for changing the emerge.log location */	
+	QProcess proc(this);
+	proc.start("perl", QStringList() << getcurrentfn);
+	proc.waitForFinished();
+	QString result = proc.readAllStandardOutput();
+	
 	if (result[0] == '!') {
 		if (targetjobn > 0) {
 			currentjob.setLabel(0, "Done!");
