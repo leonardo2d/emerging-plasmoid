@@ -728,6 +728,9 @@ sub current()
                 }
             }
         }
+        
+        # unknown time
+ 
         $e_end = CORE::time();
 #         &gtime($e_end - $e_start);
 #         print "\n Currently merging $e_curmerge out of $e_lastmerge\n";
@@ -767,8 +770,20 @@ sub current()
 #             print color 'reset';
 #             print "\n";
 #         }
-        my $e_expected = $tm_secondi / $e_count;
+
+
+		# it may happen that we do not know this package yet,
+		# initialize expected time with actual time
+		my $e_expected = $e_end - $e_start;
+		
+		# or, if we happen to know this package, calculates
+		# an estimate
+		if ($e_count) {
+			$e_expected = $tm_secondi / $e_count;
+		}
+		
 		$e_current = trim($e_current);
+			
         print "$e_current $e_expected $e_start $e_end $e_curmerge $e_lastmerge";
     }
     exit;
