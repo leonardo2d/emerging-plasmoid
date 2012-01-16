@@ -1,10 +1,10 @@
-# Project Needs a name ofcourse
-project(plasma-emerging)
- 
+project(emerging-plasmoid)
+set(VERSION "1.0.3")
+
 # Find the required Libaries
 find_package(KDE4 REQUIRED)
 include(KDE4Defaults)
- 
+
 add_definitions (${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 include_directories(
    ${CMAKE_SOURCE_DIR}
@@ -30,3 +30,21 @@ install(FILES getcurrent glogo-small.png
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/share/apps/emerging-plasmoid/)
 
 
+
+# CPack related stuff
+set(CPACK_SOURCE_GENERATOR TGZ)
+set(CPACK_GENERATOR TGZ)
+		
+set(CPACK_PACKAGE_NAME "emerging-plasmoid")
+set(CPACK_PACKAGE_VENDOR "Leonardo Guilherme de Freitas")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "emerging-plasmoid")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Emerging Plasmoid")
+set(CPACK_PACKAGE_VERSION "${VERSION}")
+set(CPACK_SOURCE_IGNORE_FILES "\\\\.git.*;${CMAKE_BINARY_DIR}/.*;.*~;\\\\.kdev4/.*;.*\\\\.kdev4;.*\\\\.swp")
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+set(CPACK_RESOURCE_FILE_README ${CMAKE_SOURCE_DIR}/README)
+
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
+set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}")
+		
+include(CPack)
