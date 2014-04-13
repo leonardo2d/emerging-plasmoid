@@ -24,13 +24,16 @@
  */
 
 #include "emergingplasmoid.h"
+#include "ui_config.h"
+#include <KConfigDialog>
+
 #include <QPainter>
 #include <QFontMetrics>
 #include <QSizeF>
 #include <KLocale>
 #include <QTimer>
 #include <QFile>
-#include <QGraphicsLinearLayout>
+#include <QGraphicsGridLayout>
 #include <QProcess>
 
 #include <plasma/svg.h>
@@ -43,10 +46,12 @@ EmergingPlasmoid::EmergingPlasmoid(QObject * parent, const QVariantList & args)
   , gentooLogoLabel(this)
   , currentJobMeter(this)
   , totalJobMeter(this)
+  , layout(NULL)
   , currentJobName("Nothing being emerged")
   , targetJobCount(0)
   , currentJobCount(0)
-  , secondsUntilGiveUp(0) {
+  , secondsUntilGiveUp(0)
+  , configDialog(NULL) {
   setBackgroundHints(DefaultBackground);
   gentooLogoLabel.setImage(KStandardDirs::locate("data", "emerging-plasmoid/glogo-small.png"));
   setHasConfigurationInterface(true);
@@ -61,9 +66,6 @@ EmergingPlasmoid::~EmergingPlasmoid() {
 }
 
 void EmergingPlasmoid::init() {
-  QGraphicsLinearLayout * layout = new QGraphicsLinearLayout(this);
-  layout->setOrientation(Qt::Vertical); //so widgets will be stacked up/down
-
   gentooLogoLabel.setAlignment(Qt::AlignCenter | Qt::AlignHCenter);
   gentooLogoLabel.setOpacity(0.7f);
 
@@ -84,10 +86,13 @@ void EmergingPlasmoid::init() {
   totalJobMeter.setLabelAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
   totalJobMeter.setLabelAlignment(2, Qt::AlignRight | Qt::AlignVCenter);
 
-  layout->addItem(&gentooLogoLabel);
-  layout->addItem(&currentJobMeter);
-  layout->addItem(&totalJobMeter);
+  KConfigGroup conf = config();
+  timeout = conf.readEntry("timeout", 10);
+  logoPosition =(LogoPosition) conf.readEntry("logoPosition", (int)LogoInTop);
 
+  layout = new QGraphicsGridLayout(this);
+  setupLayout();
+  
   clear();
 }
 
@@ -132,7 +137,7 @@ void EmergingPlasmoid::updateStatus() {
   }
 
   /* Actual update if there is something running */
-  secondsUntilGiveUp = 10;
+  secondsUntilGiveUp = timeout;
   QStringList v = result.split(' ');
   QString jobname = v[0];
   int targettime = v[1].toFloat();
@@ -170,6 +175,123 @@ void EmergingPlasmoid::updateStatus() {
 
   update();
 }
+
+void EmergingPlasmoid::createConfigurationInterface(KConfigDialog * parent) {
+  QWidget * widget = new QWidget(parent);
+  configWidget.setupUi(widget);
+  parent->addPage(widget, "Emerging Settings", KStandardDirs::locate("data", "emerging-plasmoid/glogo-small.png"));
+  parent->setMinimumHeight(200);
+  parent->setMinimumWidth(400);
+  
+  configDialog = parent;
+   
+  configWidget.logoPositionComboBox->setCurrentIndex(logoPosition);
+  configWidget.timeoutSpinBox->setValue(timeout);
+
+  connect(configWidget.logoPositionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(configModified()));
+  connect(configWidget.timeoutSpinBox, SIGNAL(valueChanged(int)), this, SLOT(configModified()));
+  
+  connect(parent, SIGNAL(accepted()), this, SLOT(configAccepted()));
+  connect(parent, SIGNAL(applyClicked()), this, SLOT(configAccepted()));
+}
+
+void EmergingPlasmoid::configAccepted() {
+  timeout = configWidget.timeoutSpinBox->value();
+  logoPosition = (LogoPosition) configWidget.logoPositionComboBox->currentIndex();
+  KConfigGroup conf = config();
+  conf.writeEntry("timeout", timeout);
+  conf.writeEntry("logoPosition", (int) logoPosition);
+  conf.sync();
+  
+  setupLayout();
+  configDialog->enableButtonApply(false);
+  emit configNeedsSaving();
+}
+
+void EmergingPlasmoid::configModified() {
+  configDialog->enableButtonApply(true);
+}
+
+
+void EmergingPlasmoid::setupLayout() {
+   /* row, column, rowspan, columspan */
+  short logoSpec[4] = { 0, 0, 1, 1};
+  short totalSpec[4] = { 0, 0, 1, 1};
+  short currentSpec[4] = { 0, 0, 1, 1};
+  
+  switch (logoPosition) {
+    case EmergingPlasmoid::LogoHidden:
+      totalSpec[0] = 1;   // row
+      totalSpec[1] = 1;   // column
+      
+      currentSpec[0] = 2; // row
+      currentSpec[1] = 1; // column
+      gentooLogoLabel.hide();
+      break;
+    case EmergingPlasmoid::LogoInTop:
+      logoSpec[0] = 1; // row
+      logoSpec[1] = 1; // column
+      
+      totalSpec[0] = 2;   // row
+      totalSpec[1] = 1;   // column
+      
+      currentSpec[0] = 3; // row
+      currentSpec[1] = 1; // column
+      break;
+    case EmergingPlasmoid::LogoInBottom:
+      logoSpec[0] = 3; // row
+      logoSpec[1] = 1; // column
+      
+      totalSpec[0] = 1;   // row
+      totalSpec[1] = 1;   // column
+      
+      currentSpec[0] = 2; // row
+      currentSpec[1] = 1; // column
+      break;
+    case EmergingPlasmoid::LogoInLeft:
+      logoSpec[0] = 1; // row
+      logoSpec[1] = 1; // column
+      logoSpec[2] = 2; // rowspan
+      
+      totalSpec[0] = 1;   // row
+      totalSpec[1] = 2;   // column
+      
+      currentSpec[0] = 2; // row
+      currentSpec[1] = 2; // column
+      break;
+    case EmergingPlasmoid::LogoInRight:
+      logoSpec[0] = 1; // row
+      logoSpec[1] = 2; // column
+      logoSpec[2] = 2; // rowspan
+      
+      totalSpec[0] = 1;   // row
+      totalSpec[1] = 1;   // column
+      
+      currentSpec[0] = 2; // row
+      currentSpec[1] = 1; // column
+      break;      
+    default:
+      break;
+  }
+  
+  /* reset a new layout */
+  if (layout == NULL)
+    return;
+  
+  layout->removeItem(&currentJobMeter);
+  layout->removeItem(&totalJobMeter);
+  layout->removeItem(&gentooLogoLabel);
+  
+  layout->addItem(&currentJobMeter, currentSpec[0], currentSpec[1], currentSpec[2], currentSpec[3]);
+  layout->addItem(&totalJobMeter  , totalSpec[0]  , totalSpec[1]  , totalSpec[2]  , totalSpec[3]);
+  if (logoPosition != LogoHidden) {
+    gentooLogoLabel.show();
+    layout->addItem(&gentooLogoLabel, logoSpec[0]   , logoSpec[1]   , logoSpec[2]   , logoSpec[3]);
+  }
+  
+  update();
+}
+
 
 void EmergingPlasmoid::themeChanged() {
   Plasma::Theme * theme = Plasma::Theme::defaultTheme();

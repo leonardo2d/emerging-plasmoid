@@ -30,6 +30,10 @@
 #include <QTimer>
 
 class QSizeF;
+class QWidget;
+class QGraphicsGridLayout;
+
+#include "ui_config.h"
 
 /* EmerginPlasmoid shows information about the current emerging process:
  * - Total packages to build
@@ -38,6 +42,15 @@ class QSizeF;
  * 
  * It is based on genlop (a modified version of it, that is). */
 class EmergingPlasmoid : public Plasma::Applet {
+  
+  enum LogoPosition {
+    LogoHidden,
+    LogoInTop,
+    LogoInBottom,
+    LogoInLeft,
+    LogoInRight
+  };
+  
   Q_OBJECT
   public:
     /* Constructs an instance of the emerging plasmoid */
@@ -46,19 +59,25 @@ class EmergingPlasmoid : public Plasma::Applet {
 
     /* Called when plasmoid gets initialized */
     void init();
+    
+    /* Called when we should create the config interface */
+    virtual void createConfigurationInterface(KConfigDialog * parent);
 
   public slots:
     void updateStatus(); /* called every second */
     void themeChanged();
-
+    void configAccepted();
+    
   private:
     void clear();
+    void setupLayout();
 
   private:
     /* Ui stuff */
     Plasma::Label gentooLogoLabel; /* the logo label */
     Plasma::Meter currentJobMeter; /* meter for current job completeness */
     Plasma::Meter totalJobMeter;   /* meter for total jobs completeness */
+    QGraphicsGridLayout * layout;  /* the grid layout used */
     
     /* stuff from getcurrent */
     QString currentJobName;        /* current package name */
@@ -68,6 +87,17 @@ class EmergingPlasmoid : public Plasma::Applet {
     /* time stuff */
     int secondsUntilGiveUp;        /* how many seconds until we give up */
     QTimer updateTimer;            /* updateStatus() timer */
+    
+    /* the config dialog */
+    Ui::ConfigWidget configWidget;
+    KConfigDialog * configDialog;
+    
+    /* config stuff */
+    int timeout;
+    LogoPosition logoPosition;
+    
+  private slots:
+    void configModified();
 };
 
 // This is the command that links your applet to the .desktop file
