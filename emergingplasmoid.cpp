@@ -325,10 +325,11 @@ void EmergingPlasmoid::clear() {
   currentJobMeter.setLabel(0, currentJobName);
   currentJobMeter.setLabel(1, "");
   currentJobMeter.setLabel(2, "");
+  totalJobMeter.setValue(0);
   totalJobMeter.setLabel(0, "Done!");
   totalJobMeter.setLabel(1, "");
   totalJobMeter.setLabel(2, "");
-}
+  }
 
 
 #include "emergingplasmoid.moc"
