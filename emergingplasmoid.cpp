@@ -115,11 +115,13 @@ void EmergingPlasmoid::updateStatus() {
     if (targetJobCount > 0) {
       /* targetJobCount > 0 means we have more work to do */
       currentJobMeter.setLabel(0, "Done!");
+      currentJobMeter.setValue(100);
+      currentJobMeter.setLabel(1, "100%");
     }
 
     /* if we think we ran all the jobs, reset meter state */
-    if (currentJobCount == targetJobCount) {
-      totalJobMeter.setValue(0);
+    if (currentJobCount == targetJobCount && targetJobCount > 0) {
+      totalJobMeter.setValue(100);
     }
 
     if (secondsUntilGiveUp > 0) {
